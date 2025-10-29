@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trient Agent</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" role="main">
+        <div class="header">
+            <h1>Trient AI</h1>
+            <p class="subtitle">Tell your agent what to do</p>
+        </div>
+
+        <div class="config-section" id="configSection">
+            <button id="minimizeConfig" class="minimize-btn" title="Minimize settings" aria-label="Minimize settings" aria-controls="configSection" aria-expanded="true">&#8211; Model Settings</button>
+            <div class="config-item">
+                <label for="llmProvider">LLM Provider:</label>
+                <select id="llmProvider">
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="google">Google Gemini</option>
+                </select>
+            </div>
+            <div class="config-item">
+                <label for="apiKey">API Key:</label>
+                <input type="password" id="apiKey" placeholder="Enter your API key" aria-required="true">
+            </div>
+            <div class="config-item">
+                <label for="model">Model:</label>
+                <input type="text" id="model" placeholder="gpt-4o" value="gpt-4o" aria-required="true">
+            </div>
+            <button id="saveApiKey" class="btn-small" title="Save API Key" aria-label="Save API Key">Save</button>
+        </div>
+        <div class="config-restore-bar" id="configRestoreBar" style="display:none;">
+            <button id="restoreConfig" class="restore-btn" title="Show Model Settings" aria-label="Show Model Settings" aria-controls="configSection" aria-expanded="false">Show Model Settings</button>
+        </div>
+
+        <div class="task-section">
+            <label for="taskInput">Task details:</label>
+            <textarea 
+                id="taskInput" 
+                placeholder="e.g., 'Search for the latest news about AI' or 'Fill out this form with my information'"
+                rows="4"
+                aria-required="true"
+            ></textarea>
+            
+            <div class="button-group">
+                <button id="startTask" class="btn-primary">Start Task</button>
+                <button id="stopTask" class="btn-secondary" disabled>Stop</button>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div class="status-header">
+                <h3>Status</h3>
+                <span id="statusIndicator" class="status-indicator idle">●</span>
+            </div>
+            <div id="statusText" class="status-text" aria-live="polite">Ready to start</div>
+            <div id="progressContainer" class="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progressBar" class="progress-fill"></div>
+                </div>
+                <span id="progressText">Step 0/0</span>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <h3>Action History</h3>
+            <div id="historyList" class="history-list">
+                <div class="history-empty">No actions yet</div>
+            </div>
+        </div>
+
+        <div class="result-section" style="display: none;">
+            <h3>Result</h3>
+            <div id="resultContent" class="result-content"></div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

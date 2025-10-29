@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test Page - Browser-Use</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #667eea;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 300px;
+        }
+        .result {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            display: none;
+        }
+        .instructions {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple Test Page</h1>
+    <p>This page is designed to test if the Browser-Use extension is working correctly.</p>
+
+    <div class="instructions">
+        <h3>📋 How to Test:</h3>
+        <ol>
+            <li><strong>Make sure</strong> the extension is loaded at chrome://extensions/</li>
+            <li><strong>Open Developer Console</strong> (Press F12)</li>
+            <li><strong>Look for:</strong> <code>[BrowserUse] Content script initialized</code></li>
+            <li><strong>Click the extension icon</strong> in your toolbar</li>
+            <li><strong>Try one of the test tasks below</strong></li>
+        </ol>
+    </div>
+
+    <!-- Test 1: Simple Click -->
+    <div class="test-section">
+        <h3>Test 1: Simple Click</h3>
+        <p><strong>Task to try:</strong> <code>Click the test button</code></p>
+        <button id="testButton" onclick="showResult('Test button clicked! ✓')">Test Button</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <!-- Test 2: Input Text -->
+    <div class="test-section">
+        <h3>Test 2: Input Text</h3>
+        <p><strong>Task to try:</strong> <code>Type "Hello World" in the input box</code></p>
+        <input type="text" id="testInput" placeholder="Type something here...">
+        <div id="result2" class="result"></div>
+    </div>
+
+    <!-- Test 3: Click Link -->
+    <div class="test-section">
+        <h3>Test 3: Click Link</h3>
+        <p><strong>Task to try:</strong> <code>Click the example link</code></p>
+        <a href="https://example.com" id="testLink">Example Link</a>
+        <p style="margin-top: 10px; color: #666;"><small>(This will navigate to example.com)</small></p>
+    </div>
+
+    <!-- Test 4: Multiple Elements -->
+    <div class="test-section">
+        <h3>Test 4: Multiple Buttons</h3>
+        <p><strong>Task to try:</strong> <code>Click the second button</code></p>
+        <button onclick="showResult('Button 1 clicked')">First Button</button>
+        <button onclick="showResult('Button 2 clicked ✓')">Second Button</button>
+        <button onclick="showResult('Button 3 clicked')">Third Button</button>
+        <div id="result4" class="result"></div>
+    </div>
+
+    <!-- Test 5: Form -->
+    <div class="test-section">
+        <h3>Test 5: Form Filling</h3>
+        <p><strong>Task to try:</strong> <code>Fill the name field with John Doe and the email with test@example.com</code></p>
+        <form id="testForm" onsubmit="event.preventDefault(); showResult('Form filled successfully! ✓');">
+            <div style="margin: 10px 0;">
+                <label>Name:</label><br>
+                <input type="text" id="nameField" placeholder="Your name">
+            </div>
+            <div style="margin: 10px 0;">
+                <label>Email:</label><br>
+                <input type="email" id="emailField" placeholder="your@email.com">
+            </div>
+            <button type="submit">Submit Form</button>
+        </form>
+        <div id="result5" class="result"></div>
+    </div>
+
+    <!-- Debugging Info -->
+    <div class="test-section">
+        <h3>🔍 Debugging Information</h3>
+        <p>If the extension isn't working, check the console (F12) for these messages:</p>
+        <ul>
+            <li>✅ <code>[BrowserUse] Content script initialized</code> - Extension loaded</li>
+            <li>✅ <code>[BrowserUse] Content script ready</code> - Ready to accept commands</li>
+            <li>✅ <code>[BrowserUse] Received message: get_state</code> - Communicating with background</li>
+            <li>✅ <code>[BrowserUse] Found X interactive elements</code> - Can see page elements</li>
+        </ul>
+        
+        <h4>Common Issues:</h4>
+        <ul>
+            <li>🔴 No messages → Reload extension at chrome://extensions/</li>
+            <li>🔴 "Connection" errors → Refresh this page (F5)</li>
+            <li>🔴 Extension not responding → Check background console</li>
+        </ul>
+        
+        <button onclick="checkContentScript()">Check Content Script Status</button>
+        <div id="statusResult" style="margin-top: 10px; padding: 10px; background: white; border-radius: 6px;"></div>
+    </div>
+
+    <script>
+        function showResult(message) {
+            // Show result in all result divs
+            document.querySelectorAll('.result').forEach(el => {
+                el.textContent = message;
+                el.style.display = 'block';
+            });
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                document.querySelectorAll('.result').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }, 3000);
+        }
+
+        function checkContentScript() {
+            const statusDiv = document.getElementById('statusResult');
+            
+            if (window.browserUseInitialized) {
+                statusDiv.innerHTML = `
+                    <strong style="color: green;">✅ Content Script is loaded!</strong><br>
+                    <small>The extension should work properly.</small>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <strong style="color: red;">❌ Content Script not detected</strong><br>
+                    <small>Try: Reload the extension, then refresh this page</small>
+                `;
+            }
+        }
+
+        // Monitor input changes
+        document.getElementById('testInput').addEventListener('input', function(e) {
+            if (e.target.value) {
+                showResult(`Input detected: "${e.target.value}" ✓`);
+            }
+        });
+
+        // Log page load
+        console.log('🧪 Test page loaded. Waiting for Browser-Use extension...');
+        
+        // Check if content script loads
+        setTimeout(() => {
+            if (window.browserUseInitialized) {
+                console.log('✅ Browser-Use extension detected and ready!');
+            } else {
+                console.warn('⚠️ Browser-Use extension not detected. Did you load it?');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

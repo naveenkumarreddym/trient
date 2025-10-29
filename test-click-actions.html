@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click Action Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        button, .button-like {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .primary-btn {
+            background: #667eea;
+            color: white;
+        }
+        .secondary-btn {
+            background: #48bb78;
+            color: white;
+        }
+        .link-btn {
+            background: #ed8936;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e6fffa;
+            border-left: 4px solid #38b2ac;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        input, textarea, select {
+            margin: 10px 5px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .occluded-container {
+            position: relative;
+            height: 100px;
+        }
+        .occluded-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 80px;
+            background: rgba(255, 0, 0, 0.3);
+            z-index: 2;
+            pointer-events: none;
+        }
+        .shadow-host {
+            padding: 20px;
+            background: #fef5e7;
+            border: 2px dashed #f39c12;
+        }
+        #log {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+        }
+        .log-success { color: #48bb78; }
+        .log-error { color: #f56565; }
+        .log-info { color: #4299e1; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Click Action Test Page</h1>
+    <p>Use this page to test if the Chrome extension click actions are working correctly.</p>
+
+    <!-- Test 1: Standard Buttons -->
+    <div class="test-section">
+        <h2>Test 1: Standard Buttons</h2>
+        <button class="primary-btn" onclick="logClick('Primary Button')">Primary Button</button>
+        <button class="secondary-btn" onclick="logClick('Secondary Button')">Secondary Button</button>
+        <button onclick="logClick('Default Button')">Default Button</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <!-- Test 2: Links -->
+    <div class="test-section">
+        <h2>Test 2: Links</h2>
+        <a href="#" class="link-btn" onclick="event.preventDefault(); logClick('Link Button');">Link Button</a>
+        <a href="#test" onclick="event.preventDefault(); logClick('Regular Link');">Regular Link</a>
+        <div id="result2" class="result"></div>
+    </div>
+
+    <!-- Test 3: Form Elements -->
+    <div class="test-section">
+        <h2>Test 3: Form Elements</h2>
+        <input type="text" id="textInput" placeholder="Click to focus" onfocus="logClick('Text Input Focused')">
+        <input type="checkbox" id="checkbox" onchange="logClick('Checkbox: ' + this.checked)">
+        <label for="checkbox">Checkbox</label>
+        <br>
+        <select id="select" onchange="logClick('Select: ' + this.value)">
+            <option value="">Select an option</option>
+            <option value="option1">Option 1</option>
+            <option value="option2">Option 2</option>
+        </select>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <!-- Test 4: Occluded Element -->
+    <div class="test-section">
+        <h2>Test 4: Occluded Element (with overlay)</h2>
+        <div class="occluded-container">
+            <button class="occluded-btn primary-btn" onclick="logClick('Occluded Button')">Occluded Button</button>
+            <div class="overlay">Overlay (pointer-events: none)</div>
+        </div>
+        <div id="result4" class="result"></div>
+    </div>
+
+    <!-- Test 5: Shadow DOM -->
+    <div class="test-section">
+        <h2>Test 5: Shadow DOM Element</h2>
+        <div id="shadowHost" class="shadow-host">
+            <p>Shadow DOM will be attached here</p>
+        </div>
+        <div id="result5" class="result"></div>
+    </div>
+
+    <!-- Test 6: Dynamically Added Button -->
+    <div class="test-section">
+        <h2>Test 6: Dynamic Element</h2>
+        <button onclick="addDynamicButton()">Add Dynamic Button</button>
+        <div id="dynamicContainer"></div>
+        <div id="result6" class="result"></div>
+    </div>
+
+    <!-- Test 7: Nested Elements -->
+    <div class="test-section">
+        <h2>Test 7: Nested Click Handlers</h2>
+        <div onclick="logClick('Outer Div')" style="padding: 20px; background: #e6f2ff; cursor: pointer;">
+            Outer Div (clickable)
+            <div onclick="event.stopPropagation(); logClick('Inner Div')" style="padding: 20px; background: #b3d9ff; margin: 10px;">
+                Inner Div (clickable, stops propagation)
+                <button onclick="event.stopPropagation(); logClick('Nested Button')">Nested Button</button>
+            </div>
+        </div>
+        <div id="result7" class="result"></div>
+    </div>
+
+    <!-- Click Log -->
+    <div class="test-section">
+        <h2>📋 Click Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let clickCount = 0;
+
+        // Log click events
+        function logClick(elementName) {
+            clickCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry log-success';
+            logEntry.textContent = `✅ [${timestamp}] Click #${clickCount}: ${elementName}`;
+            document.getElementById('log').appendChild(logEntry);
+            
+            // Scroll to bottom of log
+            const logDiv = document.getElementById('log');
+            logDiv.scrollTop = logDiv.scrollHeight;
+
+            // Show success message
+            console.log(`[Test Page] Click detected: ${elementName}`);
+            
+            // Visual feedback
+            if (window.visualFeedback) {
+                window.visualFeedback(elementName);
+            }
+        }
+
+        // Clear log
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            clickCount = 0;
+        }
+
+        // Add dynamic button
+        function addDynamicButton() {
+            const container = document.getElementById('dynamicContainer');
+            const button = document.createElement('button');
+            button.className = 'primary-btn';
+            button.textContent = 'Dynamic Button (click me!)';
+            button.onclick = () => logClick('Dynamic Button');
+            container.appendChild(button);
+            logClick('Dynamic Button Added');
+        }
+
+        // Create Shadow DOM
+        function createShadowDOM() {
+            const host = document.getElementById('shadowHost');
+            const shadowRoot = host.attachShadow({ mode: 'open' });
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                button {
+                    padding: 10px 20px;
+                    background: #9f7aea;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
+                button:hover {
+                    background: #805ad5;
+                }
+            `;
+            
+            const button = document.createElement('button');
+            button.textContent = 'Shadow DOM Button';
+            button.onclick = () => {
+                logClick('Shadow DOM Button');
+            };
+            
+            shadowRoot.appendChild(style);
+            shadowRoot.appendChild(button);
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            createShadowDOM();
+            logClick('Page Loaded - Ready for Testing');
+        });
+
+        // Visual feedback function
+        window.visualFeedback = function(elementName) {
+            const feedback = document.createElement('div');
+            feedback.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+            `;
+            feedback.innerHTML = `✅ Clicked: <strong>${elementName}</strong>`;
+            document.body.appendChild(feedback);
+            
+            setTimeout(() => {
+                feedback.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => feedback.remove(), 300);
+            }, 2000);
+        };
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Log all clicks to console for debugging
+        document.addEventListener('click', (e) => {
+            console.log('[Test Page] Raw click event:', {
+                target: e.target.tagName,
+                className: e.target.className,
+                id: e.target.id,
+                clientX: e.clientX,
+                clientY: e.clientY
+            });
+        }, true);
+    </script>
+</body>
+</html>
