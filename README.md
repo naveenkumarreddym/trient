@@ -5,7 +5,7 @@ A Chrome extension that brings AI-powered browser automation to your fingertips.
 ## 🌟 Features
 
 - **Natural Language Commands**: Tell the browser what to do in plain English
-- **Multi-LLM Support**: Works with OpenAI, Anthropic, Google Gemini, and Browser-Use Cloud
+- **Multi-LLM Support**: Works with OpenAI, Anthropic and Google Gemini
 - **Smart Element Detection**: Automatically identifies and indexes interactive elements
 - **Action History**: Track all actions performed by the AI agent
 - **Real-time Feedback**: Visual indicators and status updates
@@ -21,27 +21,16 @@ A Chrome extension that brings AI-powered browser automation to your fingertips.
 4. Click "Load unpacked"
 5. Select the `chrome-plugin` folder
 
-### Icon Setup
-
-Before loading the extension, you need to create icon files:
-
-1. Create an `icons` folder in the `chrome-plugin` directory
-2. Add three icon files:
-   - `icon16.png` (16x16 pixels)
-   - `icon48.png` (48x48 pixels)
-   - `icon128.png` (128x128 pixels)
-
-You can use any image editor or online tool to create these icons. Suggested design: A robot/AI symbol in purple/blue gradient matching the Browser-Use brand.
-
 ## ⚙️ Configuration
 
 ### Setting up API Keys
 
 1. Click the extension icon in your Chrome toolbar
-2. Select your preferred LLM provider
-3. Enter your API key
-4. (Optional) Specify a custom model name
-5. Click "Save"
+2. Select your preferred LLM provider (eg. Google Gemini)
+3. Use https://aistudio.google.com/ for free api key
+4. Enter your API key
+5. (Optional) Specify a custom model name (eg. gemini-2.0-flash)
+6. Click "Save"
 
 ### Supported Providers
 
@@ -58,7 +47,7 @@ You can use any image editor or online tool to create these icons. Suggested des
 #### Google Gemini
 - **Default Model**: `gemini-2.0-flash-exp`
 - **API Key**: Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
-- **Recommended Models**: `gemini-2.0-flash-exp`, `gemini-1.5-pro`
+- **Recommended Models**: `gemini-2.0-flash`, `gemini-1.5-pro`
 
 #### Browser-Use Cloud
 - **API Key**: Get from [Browser-Use Cloud](https://cloud.browser-use.com/dashboard/api)
@@ -69,7 +58,7 @@ You can use any image editor or online tool to create these icons. Suggested des
 ### Basic Example
 
 1. Open any webpage
-2. Click the Browser-Use extension icon
+2. Click the Trient AI extension icon
 3. Enter a task like:
    - "Search for the latest AI news"
    - "Fill out this form with test data"
