@@ -1,6 +1,6 @@
 # Trient AI Chrome Extension
 
-A Chrome extension that brings AI-powered browser automation to your fingertips. This extension is based on the [browser-use](https://github.com/browser-use/browser-use) Python library, reimagined as a lightweight Chrome plugin.
+A Chrome extension that brings AI-powered browser automation to your fingertips. This extension is based on the [browser-use](https://github.com/browser-use/browser-use) Python library, reimagined as a lightweight Chrome plugin. Check [video](https://www.youtube.com/watch?v=0rOVIbGx2mk)
 
 ## 🌟 Features
 
