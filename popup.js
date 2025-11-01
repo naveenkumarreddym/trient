@@ -1,9 +1,14 @@
 // Popup UI Controller
 class PopupController {
     constructor() {
+        const urlParams = new URLSearchParams(window.location.search);
+        this.tabId = parseInt(urlParams.get('tabId'));
+
         this.isRunning = false;
+        this.isTaskFinished = false; // Add this flag
         this.currentStep = 0;
         this.maxSteps = 100;
+
         this.initializeElements();
         this.loadSettings();
         this.attachEventListeners();
@@ -102,15 +107,25 @@ class PopupController {
 
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            // Ignore messages not intended for this tab
+            if (message.tabId !== this.tabId) {
+                return;
+            }
+
+            // If task is finished, only allow a new task to start
+            if (this.isTaskFinished && message.type !== 'start_task') {
+                return;
+            }
+
             switch (message.type) {
                 case 'status_update':
                     this.updateStatus(message.status, message.text);
                     break;
-                case 'action_executed':
-                    this.addHistoryItem(message.action);
-                    break;
                 case 'progress_update':
                     this.updateProgress(message.step, message.maxSteps);
+                    break;
+                case 'history_update':
+                    this.addHistoryItem(message.action);
                     break;
                 case 'task_completed':
                     this.taskCompleted(message.result);
@@ -123,61 +138,35 @@ class PopupController {
     }
 
     async startTask() {
+        if (this.isRunning) return;
+
         const task = this.taskInput.value.trim();
         if (!task) {
-            this.showNotification('Please enter a task');
-            return;
-        }
-
-        const apiKey = this.apiKey.value.trim();
-        if (!apiKey) {
-            this.showNotification('Please enter an API key');
+            this.showNotification('Please enter a task description.');
             return;
         }
 
         this.isRunning = true;
+        this.isTaskFinished = false; // Reset the finished flag
         this.startBtn.disabled = true;
         this.stopBtn.disabled = false;
-        this.currentStep = 0;
-        this.clearHistory();
         this.resultSection.style.display = 'none';
-        this.progressContainer.style.display = 'block';
-
+        this.resultContent.textContent = '';
+        this.clearHistory();
         this.updateStatus('running', 'Starting task...');
+        this.updateProgress(0, this.maxSteps);
 
-        // Get current tab
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        let tab = tabs[0];
-        // If no tab, or tab is a Chrome/Edge/internal page, open google.com and use that
-        const invalidPrefixes = [
-            'chrome://', 'chrome-extension://', 'edge://', 'about:', 'chrome-search://', 'devtools://', 'vivaldi://', 'brave://', 'opera://'
-        ];
-        let isInvalid = false;
-        if (!tab || !tab.url) {
-            isInvalid = true;
-        } else {
-            for (const prefix of invalidPrefixes) {
-                if (tab.url.startsWith(prefix)) {
-                    isInvalid = true;
-                    break;
-                }
-            }
-        }
-        if (isInvalid) {
-            tab = await chrome.tabs.create({ url: 'https://www.google.com' });
-            await new Promise(resolve => setTimeout(resolve, 1200));
-        }
+        const settings = {
+            llmProvider: this.llmProvider.value,
+            apiKey: this.apiKey.value,
+            model: this.model.value || this.model.placeholder
+        };
 
-        // Send message to background script to start task
         chrome.runtime.sendMessage({
             type: 'start_task',
+            tabId: this.tabId, // Use the tabId of this panel
             task: task,
-            tabId: tab.id,
-            settings: {
-                llmProvider: this.llmProvider.value,
-                apiKey: this.apiKey.value,
-                model: this.model.value
-            }
+            settings: settings
         });
     }
 
@@ -244,6 +233,7 @@ class PopupController {
 
     taskCompleted(result) {
         this.isRunning = false;
+        this.isTaskFinished = true; // Lock the UI
         this.startBtn.disabled = false;
         this.stopBtn.disabled = true;
         
@@ -259,6 +249,7 @@ class PopupController {
 
     taskError(error) {
         this.isRunning = false;
+        this.isTaskFinished = true; // Lock the UI
         this.startBtn.disabled = false;
         this.stopBtn.disabled = true;
         

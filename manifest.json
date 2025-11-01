@@ -26,9 +26,6 @@
     },
     "default_title": "Open Trient Agent"
   },
-  "side_panel": {
-    "default_path": "popup.html"
-  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

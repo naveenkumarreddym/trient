@@ -195,6 +195,8 @@ Marks the task as complete.
 - No data is sent to any server except your chosen LLM provider
 - All processing happens locally in your browser
 - Open source - review the code yourself
+- **Secure API Key Storage**: Your API keys are stored securely in local browser storage, never exposed.
+- **Independent Per-Tab Operation**: Run multiple automation tasks in parallel across different tabs. Each side panel operates independently with its own isolated context, history, and status.
 
 ## 🐛 Troubleshooting
 

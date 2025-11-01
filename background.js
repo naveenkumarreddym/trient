@@ -1,34 +1,52 @@
 // Background Service Worker - Agent Orchestrator
-// Side Panel Handler - Open side panel when extension icon is clicked
+// Side Panel Handler - Enable side panel only for the current tab
 chrome.action.onClicked.addListener((tab) => {
-    chrome.sidePanel.open({ windowId: tab.windowId });
+    const panelUrl = `popup.html?tabId=${tab.id}`;
+    chrome.sidePanel.setOptions({ tabId: tab.id, path: panelUrl, enabled: true });
+    chrome.sidePanel.open({ tabId: tab.id });
 });
 
 class BrowserUseAgent {
     constructor() {
-        this.isRunning = false;
-        this.currentTask = null;
-        this.currentTabId = null;
-        this.settings = null;
-        this.history = [];
+        // Map to store context for each tab
+        this.contextMap = new Map();
         this.maxSteps = 100;
-        this.currentStep = 0;
-        this.llmService = null;
-        
+
         this.setupMessageListener();
+
+        // Clean up context when a tab is closed
+        chrome.tabs.onRemoved.addListener((tabId) => {
+            this.contextMap.delete(tabId);
+        });
     }
 
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            const tabId = sender.tab?.id || message.tabId;
+            if (!tabId) return; // Ignore messages without a tab context
+
+            // Get or create context for the tab
+            if (!this.contextMap.has(tabId)) {
+                this.contextMap.set(tabId, {
+                    isRunning: false,
+                    currentTask: null,
+                    settings: null,
+                    history: [],
+                    currentStep: 0,
+                    llmService: null,
+                });
+            }
+            const context = this.contextMap.get(tabId);
+
             if (message.type === 'start_task') {
-                this.startTask(message.task, message.tabId, message.settings);
-                return false; // No immediate response needed
+                this.startTask(message.task, tabId, message.settings, context);
+                return false;
             } else if (message.type === 'stop_task') {
-                this.stopTask();
-                return false; // No immediate response needed
+                this.stopTask(context);
+                return false;
             } else if (message.type === 'cdp_click') {
-                this.performCdpClick(sender.tab.id, message.x, message.y, sendResponse);
-                return true; // Indicates that the response is sent asynchronously
+                this.performCdpClick(tabId, message.x, message.y, sendResponse);
+                return true;
             } else if (message.type === 'js_click') {
                 // Inject code to traverse shadow DOM and click element
                 chrome.scripting.executeScript({
@@ -126,226 +144,159 @@ class BrowserUseAgent {
         }
     }
 
-    async startTask(task, tabId, settings) {
-        this.isRunning = true;
-        this.currentTask = task;
-        this.currentTabId = tabId;
-        this.settings = settings;
-        this.history = [];
-        this.currentStep = 0;
-        
-        this.llmService = new LLMService(settings);
-        
-        this.sendStatusUpdate('running', 'Initializing...');
-        
+    async startTask(task, tabId, settings, context) {
+        context.isRunning = true;
+        context.currentTask = task;
+        context.settings = settings;
+        context.history = [];
+        context.currentStep = 0;
+        context.llmService = new LLMService(settings);
+
+        this.sendStatusUpdate(tabId, 'running', 'Initializing...');
+
         try {
-            // Ensure content script is injected
-            await this.ensureContentScript();
-            
-            this.sendStatusUpdate('running', 'Analyzing task...');
-            await this.executeTaskLoop();
+            await this.ensureContentScript(tabId);
+            this.sendStatusUpdate(tabId, 'running', 'Analyzing task...');
+            await this.executeTaskLoop(tabId, context);
         } catch (error) {
-            console.error('Task error:', error);
-            this.sendMessage({ type: 'task_error', error: error.message });
-            this.isRunning = false;
+            console.error(`Task error in tab ${tabId}:`, error);
+            this.sendMessageToTab(tabId, { type: 'task_error', error: error.message });
+            context.isRunning = false;
         }
     }
 
-    async ensureContentScript() {
+    async ensureContentScript(tabId) {
         try {
-            // First, check if we're on a valid page
-            const tab = await chrome.tabs.get(this.currentTabId);
+            const tab = await chrome.tabs.get(tabId);
             const url = tab.url || '';
-            
-            console.log('Attempting to automate URL:', url);
-            
-            // Check for unsupported pages
-            const isInvalidPage = 
-                url.startsWith('chrome://') || 
-                url.startsWith('chrome-extension://') || 
-                url.startsWith('edge://') || 
-                url.startsWith('about:') ||
-                url === '' ||
-                url === 'about:blank' ||
-                url.startsWith('chrome-search://');
-            
-            if (isInvalidPage) {
-                let pageType = 'Unknown';
-                if (url.startsWith('chrome://')) pageType = 'Chrome internal page';
-                else if (url.startsWith('chrome-extension://')) pageType = 'Extension page';
-                else if (url.startsWith('about:')) pageType = 'About page';
-                else if (url === '' || url === 'about:blank') pageType = 'Empty/blank page';
-                else if (url.startsWith('chrome-search://')) pageType = 'Chrome search page';
-                
-                throw new Error(`Cannot automate ${pageType}.\n\nCurrent URL: ${url}\n\nPlease navigate to:\n• A regular website (http:// or https://)\n• Or open test-simple.html from your file system\n\nExamples: google.com, example.com, wikipedia.org`);
+            if (url.startsWith('chrome://') || url.startsWith('edge://') || url.startsWith('about:')) {
+                throw new Error('Cannot automate this page. Please navigate to a website.');
             }
-            
-            console.log('Checking content script on:', url);
-            
-            // Try to ping the content script (with timeout)
-            const response = await Promise.race([
-                this.getBrowserState(),
-                new Promise(resolve => setTimeout(() => resolve({ timeout: true }), 2000))
-            ]);
-            
-            // If we got a valid response, content script is ready
-            if (response.url && !response.error && !response.timeout) {
-                console.log('Content script already loaded');
-                return;
-            }
-            
-            // Content script not responding, try to inject it
-            console.log('Content script not found, injecting...');
-            
-            try {
-                await chrome.scripting.executeScript({
-                    target: { tabId: this.currentTabId },
-                    files: ['content.js']
-                });
-                console.log('Content script injected');
-            } catch (injectError) {
-                console.error('Failed to inject content script:', injectError);
-                throw new Error(`Cannot inject script on this page. Try refreshing the page (F5) or use a different website.`);
-            }
-            
-            // Wait for script to initialize
-            await this.sleep(1000);
-            
-            // Verify it's working now
-            const verifyResponse = await Promise.race([
-                this.getBrowserState(),
-                new Promise(resolve => setTimeout(() => resolve({ timeout: true }), 2000))
-            ]);
-            
-            if (verifyResponse.timeout || verifyResponse.error) {
-                throw new Error('Content script loaded but not responding. Please refresh the page and try again.');
-            }
-            
-            console.log('Content script verified and ready');
-            
-        } catch (error) {
-            console.error('Error in ensureContentScript:', error);
-            
-            // Re-throw with the original message if it's already user-friendly
-            if (error.message.includes('Cannot automate') || 
-                error.message.includes('Cannot inject') ||
-                error.message.includes('not responding')) {
-                throw error;
-            }
-            
-            // Otherwise, provide a generic helpful message
-            throw new Error(`Failed to initialize: ${error.message}. Try refreshing the page (F5) first.`);
+
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => window.hasOwnProperty('browserStateExtractorInjected'),
+            });
+
+            if (results[0] && results[0].result) return; // Already injected
+        } catch (e) {
+            throw new Error(`Cannot access tab: ${e.message}`);
         }
+
+        this.sendStatusUpdate(tabId, 'running', 'Injecting script...');
+        await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ['content.js'],
+        });
+
+        // Wait for the script to be ready
+        let retries = 10;
+        while (retries > 0) {
+            try {
+                const results = await chrome.scripting.executeScript({
+                    target: { tabId: tabId },
+                    func: () => window.hasOwnProperty('browserStateExtractorInjected'),
+                });
+                if (results[0] && results[0].result) return; // Success
+            } catch (e) {
+                // Ignore errors during retries
+            }
+            await this.sleep(500);
+            retries--;
+        }
+
+        throw new Error('Failed to inject content script. Please refresh the page.');
     }
 
-    stopTask() {
-        this.isRunning = false;
-        this.currentTask = null;
+    stopTask(context) {
+        context.isRunning = false;
+        context.currentTask = null;
     }
 
-    async executeTaskLoop() {
-        while (this.isRunning && this.currentStep < this.maxSteps) {
-            this.currentStep++;
-            this.sendMessage({ 
+    async executeTaskLoop(tabId, context) {
+        while (context.isRunning && context.currentStep < this.maxSteps) {
+            context.currentStep++;
+            this.sendMessageToTab(tabId, { 
                 type: 'progress_update', 
-                step: this.currentStep, 
+                step: context.currentStep, 
                 maxSteps: this.maxSteps 
             });
 
-            // Get browser state
-            const browserState = await this.getBrowserState();
+            const browserState = await this.getBrowserState(tabId);
             
-            // Get next action from LLM
-            this.sendStatusUpdate('running', 'Thinking...');
-            const action = await this.llmService.getNextAction(
-                this.currentTask, 
+            this.sendStatusUpdate(tabId, 'running', 'Thinking...');
+            const action = await context.llmService.getNextAction(
+                context.currentTask, 
                 browserState, 
-                this.history
+                context.history
             );
 
             if (!action) {
                 throw new Error('Failed to get next action from LLM');
             }
 
-            // Execute action
-            this.sendStatusUpdate('running', `Executing: ${action.type}`);
-            const result = await this.executeAction(action);
+            this.sendStatusUpdate(tabId, 'running', `Executing: ${action.type}`);
+            const result = await this.executeAction(action, tabId);
             
-            // Record in history
-            this.history.push({
-                step: this.currentStep,
+            context.history.push({
+                step: context.currentStep,
                 action: action,
                 result: result
             });
 
-            // Send action to popup
-            this.sendMessage({
-                type: 'action_executed',
-                action: {
-                    type: action.type,
-                    details: this.formatActionDetails(action),
-                    error: result.error
-                }
+            this.sendMessageToTab(tabId, {
+                type: 'history_update',
+                action: { ...action, details: this.formatActionDetails(action), result: result }
             });
 
-            // Check if task is done
             if (action.type === 'done') {
-                this.sendMessage({ 
+                this.sendMessageToTab(tabId, { 
                     type: 'task_completed', 
                     result: { text: action.text } 
                 });
-                this.isRunning = false;
+                context.isRunning = false;
                 break;
             }
 
-            // Check for errors
             if (result.error) {
-                const errorCount = this.history.filter(h => h.result.error).length;
+                const errorCount = context.history.slice(-3).filter(h => h.result.error).length;
                 if (errorCount >= 3) {
                     throw new Error('Too many consecutive errors. Stopping task.');
                 }
             }
 
-            // Small delay between actions
             await this.sleep(1000);
         }
 
-        if (this.currentStep >= this.maxSteps) {
+        if (context.currentStep >= this.maxSteps) {
             throw new Error('Maximum steps reached');
         }
     }
 
-    async getBrowserState() {
-        return new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-                console.warn('getBrowserState timeout');
-                resolve({ error: 'Timeout waiting for page state' });
-            }, 5000);
-            
+    async getBrowserState(tabId) {
+        this.sendStatusUpdate(tabId, 'running', 'Extracting page content...');
+        return new Promise((resolve, reject) => {
             chrome.tabs.sendMessage(
-                this.currentTabId,
-                { type: 'get_state' },
+                tabId,
+                { type: 'get_browser_state' },
                 (response) => {
-                    clearTimeout(timeout);
-                    
                     if (chrome.runtime.lastError) {
-                        console.error('Get state error:', chrome.runtime.lastError);
-                        resolve({ error: chrome.runtime.lastError.message });
-                    } else if (!response) {
-                        console.error('No response from content script');
-                        resolve({ error: 'No response from content script' });
+                        return reject(new Error(chrome.runtime.lastError.message));
+                    }
+                    if (response && response.success) {
+                        resolve(response.data);
                     } else {
-                        resolve(response);
+                        reject(new Error(response?.error || 'Content script not responding.'));
                     }
                 }
             );
         });
     }
 
-    async executeAction(action) {
+    async executeAction(action, tabId) {
         return new Promise((resolve) => {
             chrome.tabs.sendMessage(
-                this.currentTabId,
+                tabId,
                 { type: 'execute_action', action: action },
                 (response) => {
                     if (chrome.runtime.lastError) {
@@ -381,13 +332,14 @@ class BrowserUseAgent {
         }
     }
 
-    sendStatusUpdate(status, text) {
-        this.sendMessage({ type: 'status_update', status, text });
+    sendStatusUpdate(tabId, status, text) {
+        this.sendMessageToTab(tabId, { type: 'status_update', status, text });
     }
 
-    sendMessage(message) {
-        chrome.runtime.sendMessage(message).catch(() => {
-            // Popup might be closed
+    sendMessageToTab(tabId, message) {
+        // Send to the specific tab's popup/side panel
+        chrome.runtime.sendMessage({ ...message, tabId }).catch(err => {
+            // Ignore errors if the side panel for this tab isn't open
         });
     }
 

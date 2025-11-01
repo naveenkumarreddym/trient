@@ -111,10 +111,8 @@ chrome-plugin/
 
 5. **User Interface**
    - Modern gradient design (purple/blue)
-   - Real-time status indicator
-   - Progress bar with step counter
-   - Action history with success/error states
-   - Result display section
+   - **Real-time Visual Feedback**: See which elements the agent is interacting with through highlighting and receive live status updates.
+   - **Per-Tab Independent Context**: The extension now supports running independent automation tasks in parallel on different tabs. Each side panel maintains its own isolated state, including task history, status, and results, preventing any cross-tab interference.
 
 6. **Safety & Error Handling**
    - Max 100 steps per task

@@ -50,12 +50,24 @@ Method 3: Keyboard shortcut (if set)
 
 ### Step 3: Use the Agent
 ```
-The side panel works exactly like the popup:
+The side panel is the central hub for user interaction. It now operates independently for each browser tab, allowing for parallel task execution without interference.
+
+### Independent Per-Tab Operation
+
+To support running multiple automations at once, the side panel architecture has been updated to be fully tab-aware:
+
+1.  **Tab-Specific Activation**: The side panel is no longer enabled globally. It is programmatically enabled and opened only for the specific tab where the user clicks the extension icon.
+2.  **Context Isolation**: Each side panel instance is tied to a unique `tabId`. The background script maintains a `Map` where each tab's ID is a key for its own isolated context, including the current task, action history, status, and final results.
+
+This ensures that the UI in one tab will not reflect the state or history of a task running in another tab.
+
+### Core Functionality
+
+The side panel allows users to:
 1. Configure API key
 2. Enter task
 3. Click "Start Task"
 4. Watch it work while panel stays open!
-```
 
 ## 🎨 Visual Changes
 

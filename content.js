@@ -9,27 +9,25 @@ class BrowserStateExtractor {
 
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            console.log('[BrowserUse] Received message:', message.type);
-            
-            if (message.type === 'get_state') {
-                this.getBrowserState().then(state => {
-                    console.log('[BrowserUse] Sending state:', state);
-                    sendResponse(state);
-                }).catch(error => {
-                    console.error('[BrowserUse] Get state error:', error);
-                    sendResponse({ error: error.message });
-                });
-                return true; // Keep channel open for async response
-            } else if (message.type === 'execute_action') {
-                this.executeAction(message.action).then(result => {
-                    console.log('[BrowserUse] Action result:', result);
-                    sendResponse(result);
-                }).catch(error => {
-                    console.error('[BrowserUse] Execute action error:', error);
-                    sendResponse({ error: error.message });
-                });
-                return true;
-            }
+            (async () => {
+                if (message.type === 'get_browser_state') {
+                    try {
+                        const state = await this.getBrowserState();
+                        sendResponse({ success: true, data: state });
+                    } catch (error) {
+                        sendResponse({ success: false, error: error.message });
+                    }
+                } else if (message.type === 'execute_action') {
+                    try {
+                        const result = await this.executeAction(message.action);
+                        sendResponse(result);
+                    } catch (error) {
+                        sendResponse({ error: error.message });
+                    }
+                }
+            })();
+
+            return true; // Keep the message port open for the async response
         });
     }
 
@@ -670,8 +668,8 @@ class BrowserStateExtractor {
 }
 
 // Initialize the state extractor (only once)
-if (!window.browserUseInitialized) {
-    window.browserUseInitialized = true;
+if (!window.browserStateExtractorInjected) {
+    window.browserStateExtractorInjected = true;
     window.stateExtractor = new BrowserStateExtractor();
     console.log('[BrowserUse] Content script ready');
 } else {
