@@ -185,7 +185,7 @@ Marks the task as complete.
 1. **Single Tab**: Currently works on one tab at a time
 2. **Max Steps**: Limited to 100 steps per task to prevent infinite loops
 3. **Element Detection**: May miss dynamically loaded elements (use scroll/wait)
-4. **File Downloads**: Download handling is limited
+4. **File Downloads**: No Download handling
 5. **Authentication**: Cannot handle complex authentication flows
 6. **CAPTCHAs**: Cannot solve CAPTCHAs
 
@@ -229,7 +229,7 @@ Marks the task as complete.
 | Capabilities | Full browser control | Tab-level control |
 | Stealth Mode | ✅ Available | ❌ Not available |
 | Multi-tab | ✅ Full support | ⚠️ Limited |
-| File System | ✅ Full access | ⚠️ Downloads only |
+| File System | ✅ Full access | ⚠️ No Downloads |
 | Screenshots | ✅ Yes | ❌ Not implemented |
 | Vision Models | ✅ Supported | ❌ Not implemented |
 | Custom Tools | ✅ Yes | ⚠️ Limited |
