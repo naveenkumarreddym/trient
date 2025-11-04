@@ -19,7 +19,7 @@ A Chrome extension that brings AI-powered browser automation to your fingertips.
 2. Open Chrome and navigate to `chrome://extensions/`
 3. Enable "Developer mode" in the top-right corner
 4. Click "Load unpacked"
-5. Select the `chrome-plugin` folder
+5. Select the `trient-main` folder
 
 ## ⚙️ Configuration
 
