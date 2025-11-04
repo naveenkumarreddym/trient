@@ -49,10 +49,6 @@ A Chrome extension that brings AI-powered browser automation to your fingertips.
 - **API Key**: Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - **Recommended Models**: `gemini-2.0-flash`, `gemini-1.5-pro`
 
-#### Browser-Use Cloud
-- **API Key**: Get from [Browser-Use Cloud](https://cloud.browser-use.com/dashboard/api)
-- **Benefits**: Optimized for browser automation, faster execution
-
 ## 📖 Usage
 
 ### Basic Example
