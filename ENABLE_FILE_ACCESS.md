@@ -4,6 +4,10 @@
 
 Getting error: "Cannot automate this page type" when trying to use the extension.
 
+## 🚀 NEW: Automatic Navigation
+
+**Good news!** The extension now automatically navigates to google.com when you start a task on restricted pages (chrome://, about:, new tab, etc.). Just start your task and the extension will handle it!
+
 ## 📊 What Page Are You On?
 
 The extension now shows you the **exact page type** causing the issue. Check the error message - it will say something like:

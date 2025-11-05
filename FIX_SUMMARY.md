@@ -131,7 +131,8 @@ Errors in red text
 
 #### Scenario 2: "Cannot automate this page type"
 **Means**: You're on an unsupported page
-**Fix**:
+**Auto-Fix**: The extension now automatically navigates to google.com when you start a task on restricted pages (chrome://, about:, new tab, etc.)
+**Manual Fix** (if auto-navigation fails):
 1. Don't try to automate chrome://, chrome-extension://, about: pages
 2. Use regular websites: http:// or https://
 3. Try example.com, google.com, wikipedia.org, etc.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Trient Agent",
-  "version": "1.0",
+  "version": "1.1",
   "description": "AI-powered browser automation - Execute tasks using natural language",
   "permissions": [
     "activeTab",

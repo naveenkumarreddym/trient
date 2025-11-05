@@ -169,8 +169,39 @@ class BrowserUseAgent {
         try {
             const tab = await chrome.tabs.get(tabId);
             const url = tab.url || '';
-            if (url.startsWith('chrome://') || url.startsWith('edge://') || url.startsWith('about:')) {
-                throw new Error('Cannot automate this page. Please navigate to a website.');
+            
+            // Check if the page is restricted (chrome://, edge://, about:, or new tab)
+            const isRestrictedPage = url.startsWith('chrome://') || 
+                                     url.startsWith('edge://') || 
+                                     url.startsWith('about:') ||
+                                     url === '' ||
+                                     url === 'chrome://newtab/' ||
+                                     url === 'edge://newtab/';
+            
+            if (isRestrictedPage) {
+                // Automatically navigate to google.com
+                this.sendStatusUpdate(tabId, 'running', '🌐 Navigating to google.com...');
+                await chrome.tabs.update(tabId, { url: 'https://www.google.com' });
+                
+                // Wait for navigation to complete
+                await new Promise((resolve) => {
+                    const listener = (updatedTabId, changeInfo) => {
+                        if (updatedTabId === tabId && changeInfo.status === 'complete') {
+                            chrome.tabs.onUpdated.removeListener(listener);
+                            resolve();
+                        }
+                    };
+                    chrome.tabs.onUpdated.addListener(listener);
+                    
+                    // Timeout after 10 seconds
+                    setTimeout(() => {
+                        chrome.tabs.onUpdated.removeListener(listener);
+                        resolve();
+                    }, 10000);
+                });
+                
+                // Wait a bit more for the page to be fully ready
+                await this.sleep(1000);
             }
 
             const results = await chrome.scripting.executeScript({
@@ -180,6 +211,10 @@ class BrowserUseAgent {
 
             if (results[0] && results[0].result) return; // Already injected
         } catch (e) {
+            // If still failing after navigation attempt, provide helpful error
+            if (e.message.includes('Cannot access')) {
+                throw new Error(`Cannot access tab: ${e.message}. 💡 Tip: Try manually navigating to a website first.`);
+            }
             throw new Error(`Cannot access tab: ${e.message}`);
         }
 

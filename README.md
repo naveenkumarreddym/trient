@@ -10,6 +10,7 @@ A Chrome extension that brings AI-powered browser automation to your fingertips.
 - **Action History**: Track all actions performed by the AI agent
 - **Real-time Feedback**: Visual indicators and status updates
 - **Flexible Configuration**: Easy API key management and model selection
+- **Automatic Navigation**: Automatically navigates to google.com when starting tasks on restricted pages (new tab, chrome://, etc.)
 
 ## 🚀 Installation
 

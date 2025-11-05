@@ -5,6 +5,22 @@ All notable changes to the Browser-Use Chrome Extension will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-05
+
+### Added
+- **Automatic Navigation to Google.com**: When a task is started on a restricted page (chrome://, edge://, about:, new tab), the extension now automatically navigates to google.com instead of showing an error
+- Visual feedback during automatic navigation with status message: "🌐 Navigating to google.com..."
+- Improved user experience by eliminating manual navigation for restricted pages
+
+### Changed
+- Updated error handling to be more graceful when restricted pages are detected
+- Enhanced `ensureContentScript()` method to handle automatic navigation
+- Updated documentation (FIX_SUMMARY.md, ENABLE_FILE_ACCESS.md) to reflect new automatic navigation feature
+
+### Fixed
+- Users no longer see "Cannot automate this page" error on new tabs or chrome:// pages
+- Extension now works seamlessly when opened on any page type
+
 ## [1.0.0] - 2025-10-25
 
 ### Initial Release 🎉
