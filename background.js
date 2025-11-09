@@ -300,7 +300,15 @@ class BrowserUseAgent {
                 }
             }
 
-            await this.sleep(1000);
+            // Add extra wait time for actions that might cause navigation
+            const navigationActions = ['navigate', 'search', 'click'];
+            if (navigationActions.includes(action.type) && result.success) {
+                // Wait longer for potential page navigation/load
+                this.sendStatusUpdate(tabId, 'running', 'Waiting for page to load...');
+                await this.sleep(2000);
+            } else {
+                await this.sleep(1000);
+            }
         }
 
         if (context.currentStep >= this.maxSteps) {
@@ -310,42 +318,109 @@ class BrowserUseAgent {
 
     async getBrowserState(tabId) {
         this.sendStatusUpdate(tabId, 'running', 'Extracting page content...');
-        return new Promise((resolve, reject) => {
-            chrome.tabs.sendMessage(
-                tabId,
-                { type: 'get_browser_state' },
-                (response) => {
-                    if (chrome.runtime.lastError) {
-                        return reject(new Error(chrome.runtime.lastError.message));
+        
+        // Try up to 3 times with content script re-injection on failure
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    chrome.tabs.sendMessage(
+                        tabId,
+                        { type: 'get_browser_state' },
+                        (response) => {
+                            if (chrome.runtime.lastError) {
+                                return reject(new Error(chrome.runtime.lastError.message));
+                            }
+                            if (response && response.success) {
+                                resolve(response.data);
+                            } else {
+                                reject(new Error(response?.error || 'Content script not responding.'));
+                            }
+                        }
+                    );
+                });
+                return result; // Success!
+            } catch (error) {
+                const isConnectionError = error.message.includes('Could not establish connection') ||
+                                        error.message.includes('Receiving end does not exist') ||
+                                        error.message.includes('message port closed');
+                
+                if (isConnectionError && attempt < 3) {
+                    console.log(`[BrowserUse] Connection lost (attempt ${attempt}/3). Re-injecting content script...`);
+                    this.sendStatusUpdate(tabId, 'running', '🔄 Reconnecting to page...');
+                    
+                    try {
+                        // Re-inject content script
+                        await this.ensureContentScript(tabId);
+                        // Wait a bit for the script to initialize
+                        await this.sleep(1000);
+                        // Continue to next attempt
+                    } catch (injectionError) {
+                        console.error('[BrowserUse] Failed to re-inject content script:', injectionError);
+                        if (attempt === 2) {
+                            throw new Error(`Failed to reconnect to page: ${injectionError.message}`);
+                        }
                     }
-                    if (response && response.success) {
-                        resolve(response.data);
-                    } else {
-                        reject(new Error(response?.error || 'Content script not responding.'));
-                    }
+                } else {
+                    // Non-connection error or final attempt - throw it
+                    throw error;
                 }
-            );
-        });
+            }
+        }
+        
+        throw new Error('Failed to get browser state after 3 attempts');
     }
 
     async executeAction(action, tabId) {
-        return new Promise((resolve) => {
-            chrome.tabs.sendMessage(
-                tabId,
-                { type: 'execute_action', action: action },
-                (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error('Execute action error:', chrome.runtime.lastError);
-                        resolve({ error: chrome.runtime.lastError.message });
-                    } else if (!response) {
-                        console.error('No response from action execution');
-                        resolve({ error: 'No response from content script' });
-                    } else {
-                        resolve(response);
+        // Try up to 3 times with content script re-injection on failure
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            const result = await new Promise((resolve) => {
+                chrome.tabs.sendMessage(
+                    tabId,
+                    { type: 'execute_action', action: action },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('Execute action error:', chrome.runtime.lastError);
+                            resolve({ error: chrome.runtime.lastError.message });
+                        } else if (!response) {
+                            console.error('No response from action execution');
+                            resolve({ error: 'No response from content script' });
+                        } else {
+                            resolve(response);
+                        }
+                    }
+                );
+            });
+            
+            // Check if this is a connection error
+            const isConnectionError = result.error && (
+                result.error.includes('Could not establish connection') ||
+                result.error.includes('Receiving end does not exist') ||
+                result.error.includes('message port closed')
+            );
+            
+            if (isConnectionError && attempt < 3) {
+                console.log(`[BrowserUse] Connection lost during action (attempt ${attempt}/3). Re-injecting content script...`);
+                this.sendStatusUpdate(tabId, 'running', '🔄 Reconnecting to page...');
+                
+                try {
+                    // Re-inject content script
+                    await this.ensureContentScript(tabId);
+                    // Wait a bit for the script to initialize
+                    await this.sleep(1000);
+                    // Continue to next attempt
+                } catch (injectionError) {
+                    console.error('[BrowserUse] Failed to re-inject content script:', injectionError);
+                    if (attempt === 2) {
+                        return { error: `Failed to reconnect to page: ${injectionError.message}` };
                     }
                 }
-            );
-        });
+            } else {
+                // Return the result (success or non-connection error)
+                return result;
+            }
+        }
+        
+        return { error: 'Failed to execute action after 3 attempts' };
     }
 
     formatActionDetails(action) {
