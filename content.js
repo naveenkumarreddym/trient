@@ -4,7 +4,7 @@ class BrowserStateExtractor {
         this.setupMessageListener();
         this.interactiveElements = [];
         this.elementIndex = 1;
-        console.log('[BrowserUse] Content script initialized');
+
     }
 
     setupMessageListener() {
@@ -33,7 +33,7 @@ class BrowserStateExtractor {
 
     async getBrowserState() {
         try {
-            console.log('[BrowserUse] Extracting browser state...');
+
             
             // Get page info
             const url = window.location.href;
@@ -41,7 +41,7 @@ class BrowserStateExtractor {
             
             // Extract interactive elements
             const elements = this.extractInteractiveElements();
-            console.log('[BrowserUse] Found', elements.length, 'interactive elements');
+
             
             // Get page text content (limited)
             const textContent = this.getPageTextContent();
@@ -56,7 +56,7 @@ class BrowserStateExtractor {
                 viewportHeight: window.innerHeight
             };
         } catch (error) {
-            console.error('[BrowserUse] Error getting browser state:', error);
+
             return { error: error.message };
         }
     }
@@ -67,12 +67,12 @@ class BrowserStateExtractor {
         const elementList = [];
         const maxElements = 150; // Increased limit
 
-        console.log('[BrowserUse] Starting element extraction including Shadow DOM...');
+
 
         // Traverse both regular DOM and Shadow DOM
         this.traverseDOM(document.body, elementList, maxElements);
 
-        console.log(`[BrowserUse] Extracted ${elementList.length} interactive elements (including Shadow DOM)`);
+
 
         return elementList;
     }
@@ -115,7 +115,7 @@ class BrowserStateExtractor {
 
         // Traverse Shadow DOM if present (open shadow roots)
         if (root.shadowRoot) {
-            console.log(`[BrowserUse] Found Shadow DOM in <${root.tagName.toLowerCase()}>, traversing...`);
+
             this.traverseDOM(root.shadowRoot, elementList, maxElements);
         }
 
@@ -242,7 +242,7 @@ class BrowserStateExtractor {
 
     async executeAction(action) {
         try {
-            console.log('[BrowserUse] Executing action:', action.type, action);
+
             
             let result;
             switch (action.type) {
@@ -271,10 +271,10 @@ class BrowserStateExtractor {
                     result = { error: `Unknown action type: ${action.type}` };
             }
             
-            console.log('[BrowserUse] Action completed:', result);
+
             return result;
         } catch (error) {
-            console.error('[BrowserUse] Action execution error:', error);
+
             return { error: error.message };
         }
     }
@@ -410,7 +410,7 @@ class BrowserStateExtractor {
             // 2. Get element's bounding box
             const rect = element.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) {
-                console.warn('[BrowserUse] Element has zero size, attempting direct click.');
+
                 try {
                     element.click();
                     return { success: true, method: 'direct_click_zero_size' };
@@ -442,7 +442,7 @@ class BrowserStateExtractor {
                 return { success: true, method: 'direct_click' };
             } catch (e) {
                 lastError = `[Direct click failed] ${e.message}`;
-                console.warn(`[BrowserUse] Direct click failed: ${e.message}`);
+
             }
 
             // (2) Try JS-injected shadow DOM click via background
@@ -468,10 +468,10 @@ class BrowserStateExtractor {
                 });
                 if (jsClickResult.success) return jsClickResult;
                 lastError = `[JS shadow click failed] ${jsClickResult.error}`;
-                console.warn(`[BrowserUse] JS shadow click failed: ${jsClickResult.error}`);
+
             } catch (e) {
                 lastError = `[JS shadow click threw] ${e.message}`;
-                console.warn(`[BrowserUse] JS shadow click threw: ${e.message}`);
+
             }
 
             // (3) Try coordinate-based click via background script (CDP)
@@ -497,10 +497,10 @@ class BrowserStateExtractor {
                 });
                 if (cdpClickResult.success) return cdpClickResult;
                 lastError = `[CDP click failed] ${cdpClickResult.error}`;
-                console.warn(`[BrowserUse] CDP click failed: ${cdpClickResult.error}`);
+
             } catch (e) {
                 lastError = `[CDP click threw] ${e.message}`;
-                console.warn(`[BrowserUse] CDP click threw: ${e.message}`);
+
             }
 
             // (4) As a last resort, try dispatching synthetic mouse events directly on the element
@@ -515,7 +515,7 @@ class BrowserStateExtractor {
                 return { success: true, method: 'synthetic_mouse_events' };
             } catch (e) {
                 lastError = `[Synthetic mouse events failed] ${e.message}`;
-                console.warn(`[BrowserUse] Synthetic mouse events failed: ${e.message}`);
+
             }
 
             // All methods failed
@@ -523,7 +523,7 @@ class BrowserStateExtractor {
 
 
         } catch (error) {
-            console.error(`[BrowserUse] Failed to click element ${action.index}:`, error);
+
             return { error: `Failed to click element: ${error.message}` };
         }
     }
@@ -649,9 +649,7 @@ class BrowserStateExtractor {
             const seconds = action.seconds || 3;
             const ms = Math.min(seconds * 1000, 10000); // Max 10 seconds
             
-            console.log(`[BrowserUse] Waiting for ${seconds} seconds...`);
             await this.sleep(ms);
-            console.log('[BrowserUse] Wait complete');
             
             return { 
                 success: true, 
@@ -671,9 +669,7 @@ class BrowserStateExtractor {
 if (!window.browserStateExtractorInjected) {
     window.browserStateExtractorInjected = true;
     window.stateExtractor = new BrowserStateExtractor();
-    console.log('[BrowserUse] Content script ready');
 } else {
-    console.log('[BrowserUse] Content script already initialized');
 }
 
 // Visual feedback for actions

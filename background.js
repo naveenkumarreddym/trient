@@ -132,13 +132,11 @@ class BrowserUseAgent {
             callback({ success: true });
 
         } catch (e) {
-            console.error('[BrowserUse] CDP Click Error:', e.message);
             callback({ error: e.message });
         } finally {
             // 4. Always detach the debugger
             chrome.debugger.detach(debuggee, () => {
                 if (chrome.runtime.lastError) {
-                    console.error('[BrowserUse] Debugger detach error:', chrome.runtime.lastError.message);
                 }
             });
         }
@@ -159,7 +157,6 @@ class BrowserUseAgent {
             this.sendStatusUpdate(tabId, 'running', 'Analyzing task...');
             await this.executeTaskLoop(tabId, context);
         } catch (error) {
-            console.error(`Task error in tab ${tabId}:`, error);
             this.sendMessageToTab(tabId, { type: 'task_error', error: error.message });
             context.isRunning = false;
         }
@@ -345,7 +342,6 @@ class BrowserUseAgent {
                                         error.message.includes('message port closed');
                 
                 if (isConnectionError && attempt < 3) {
-                    console.log(`[BrowserUse] Connection lost (attempt ${attempt}/3). Re-injecting content script...`);
                     this.sendStatusUpdate(tabId, 'running', '🔄 Reconnecting to page...');
                     
                     try {
@@ -355,7 +351,6 @@ class BrowserUseAgent {
                         await this.sleep(1000);
                         // Continue to next attempt
                     } catch (injectionError) {
-                        console.error('[BrowserUse] Failed to re-inject content script:', injectionError);
                         if (attempt === 2) {
                             throw new Error(`Failed to reconnect to page: ${injectionError.message}`);
                         }
@@ -379,10 +374,8 @@ class BrowserUseAgent {
                     { type: 'execute_action', action: action },
                     (response) => {
                         if (chrome.runtime.lastError) {
-                            console.error('Execute action error:', chrome.runtime.lastError);
                             resolve({ error: chrome.runtime.lastError.message });
                         } else if (!response) {
-                            console.error('No response from action execution');
                             resolve({ error: 'No response from content script' });
                         } else {
                             resolve(response);
@@ -399,7 +392,6 @@ class BrowserUseAgent {
             );
             
             if (isConnectionError && attempt < 3) {
-                console.log(`[BrowserUse] Connection lost during action (attempt ${attempt}/3). Re-injecting content script...`);
                 this.sendStatusUpdate(tabId, 'running', '🔄 Reconnecting to page...');
                 
                 try {
@@ -409,7 +401,6 @@ class BrowserUseAgent {
                     await this.sleep(1000);
                     // Continue to next attempt
                 } catch (injectionError) {
-                    console.error('[BrowserUse] Failed to re-inject content script:', injectionError);
                     if (attempt === 2) {
                         return { error: `Failed to reconnect to page: ${injectionError.message}` };
                     }
@@ -495,7 +486,6 @@ class LLMService {
 
             return this.parseAction(response);
         } catch (error) {
-            console.error('LLM API Error:', error);
             throw new Error(`LLM API Error: ${error.message}`);
         }
     }
@@ -686,7 +676,6 @@ class LLMService {
             
             return action;
         } catch (error) {
-            console.error('Failed to parse action:', response);
             throw new Error(`Failed to parse LLM response: ${error.message}`);
         }
     }
